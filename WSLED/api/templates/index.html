@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LED Matrix Controller</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --success-color: #2ecc71;
+      --error-color: #e74c3c;
+      --warning-color: #f39c12;
+      --font-color: #333;
+      --bg-color: #f5f5f5;
+      --card-bg: #ffffff;
+      --input-bg: #ffffff;
+      --input-border: #ddd;
+      --shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .dark-theme {
+      --primary-color: #2980b9;
+      --font-color: #f5f5f5;
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --input-bg: #2d2d2d;
+      --input-border: #444;
+      --shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--font-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--input-border);
+    }
+
+    main {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+      color: var(--primary-color);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      opacity: 0.7;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px 15px;
+      border-radius: 8px;
+      font-size: 1rem;
+      border: 1px solid var(--input-border);
+      background-color: var(--input-bg);
+      color: var(--font-color);
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+
+    .input-with-icon {
+      position: relative;
+    }
+
+    .input-with-icon i {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #888;
+    }
+
+    .row {
+      display: flex;
+      gap: 15px;
+    }
+
+    .col {
+      flex: 1;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button i {
+      font-size: 0.9rem;
+    }
+
+    .status-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 15px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background-color: var(--card-bg);
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: #888;
+    }
+
+    .status-connecting .status-indicator { background-color: var(--warning-color); }
+    .status-connected .status-indicator { background-color: var(--success-color); }
+    .status-error .status-indicator { background-color: var(--error-color); }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      color: var(--font-color);
+      cursor: pointer;
+      font-size: 1.5rem;
+      padding: 8px;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .form-action {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-action button {
+      flex: 1;
+    }
+
+    .clear-btn {
+      background-color: transparent;
+      border: 1px solid var(--input-border);
+      color: var(--font-color);
+    }
+
+    .matrix-preview {
+      border: 1px solid var(--input-border);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+      overflow: hidden;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--input-bg);
+      position: relative;
+    }
+
+    .matrix-preview-text {
+      white-space: nowrap;
+      color: var(--primary-color);
+      font-weight: bold;
+    }
+
+    .scrolling {
+      animation: scroll-left 15s linear infinite;
+    }
+
+    @keyframes scroll-left {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .loading-indicator {
+      animation: pulse 1.5s infinite;
+    }
+
+    @media (max-width: 600px) {
+      .row {
+        flex-direction: column;
+      }
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 20px 0;
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      margin-left: 5px;
+    }
+
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      width: 200px;
+      background-color: var(--font-color);
+      color: var(--bg-color);
+      text-align: center;
+      border-radius: 6px;
+      padding: 8px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 0.9rem;
+    }
+
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <header>
+    <div>
+      <h1>LED Matrix Controller</h1>
+      <p class="subtitle">Sterowanie wyświetlaczem LED</p>
+    </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Przełącz motyw">
+      <i class="fas fa-sun"></i>
+    </button>
+  </header>
+
+  <main>
+    <div class="matrix-preview">
+      <div class="matrix-preview-text" id="previewText">Podgląd tekstu</div>
+    </div>
+
+    <div class="card">
+      <form id="matrixForm" onsubmit="return false;">
+        <div class="form-group">
+          <label for="messageInput">Tekst do wyświetlenia</label>
+          <div class="input-with-icon">
+            <input
+              type="text"
+              id="messageInput"
+              placeholder="Wpisz tekst..."
+              autocomplete="off"
+              required
+            />
+            <i class="fas fa-font"></i>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col form-group">
+            <label for="modeSelect">Tryb wyświetlania</label>
+            <div class="input-with-icon">
+              <select id="modeSelect">
+                <option value="static">Statyczny</option>
+                <option value="scroll">Przewijany</option>
+              </select>
+              <i class="fas fa-caret-down"></i>
+            </div>
+          </div>
+          <div class="col form-group">
+            <label for="repeatInput">
+              Liczba powtórzeń
+              <span class="tooltip">
+                <i class="fas fa-question-circle"></i>
+                <span class="tooltip-text">Ustaw 0 dla nieskończonej liczby powtórzeń</span>
+              </span>
+            </label>
+            <div class="input-with-icon">
+              <input
+                type="number"
+                id="repeatInput"
+                value="1"
+                min="0"
+                max="100"
+                placeholder="Liczba powtórzeń"
+              />
+              <i class="fas fa-repeat"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="speedInput">
+            Szybkość przewijania (ms)
+            <span class="tooltip">
+              <i class="fas fa-question-circle"></i>
+              <span class="tooltip-text">Niższe wartości = szybsze przewijanie</span>
+            </span>
+          </label>
+          <div class="input-with-icon">
+            <input
+              type="number"
+              id="speedInput"
+              value="100"
+              min="10"
+              max="1000"
+              step="10"
+              placeholder="Szybkość (ms)"
+            />
+            <i class="fas fa-tachometer-alt"></i>
+          </div>
+        </div>
+
+        <div class="form-action">
+          <button type="button" class="clear-btn" onclick="clearForm()">
+            <i class="fas fa-times"></i> Wyczyść
+          </button>
+          <button type="button" onclick="sendMessage()" id="sendButton">
+            <i class="fas fa-paper-plane"></i> Wyślij
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="statusBox" class="status-container status-connecting">
+      <span class="status-indicator"></span>
+      <span id="statusText">Łączenie z wyświetlaczem...</span>
+    </div>
+  </main>
+
+  <footer>
+    LED Matrix Controller &copy; 2025
+  </footer>
+
+  <script>
+    // WebSocket handling
+    let ws;
+    let reconnectAttempts = 0;
+    let reconnectTimeout;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const STATUS_BOX = document.getElementById("statusBox");
+    const STATUS_TEXT = document.getElementById("statusText");
+    const SEND_BUTTON = document.getElementById("sendButton");
+    const PREVIEW = document.getElementById("previewText");
+
+    function connectWebSocket() {
+      ws = new WebSocket(`ws://${location.host}/ws`);
+      updateStatus("connecting", "Łączenie z wyświetlaczem...");
+
+      ws.onopen = () => {
+        updateStatus("connected", "Połączono z wyświetlaczem ✅");
+        reconnectAttempts = 0;
+        SEND_BUTTON.disabled = false;
+      };
+
+      ws.onclose = () => {
+        updateStatus("error", "Rozłączono z wyświetlaczem ❌");
+        SEND_BUTTON.disabled = true;
+        tryReconnect();
+      };
+
+      ws.onerror = (err) => {
+        updateStatus("error", "Błąd połączenia 🚨");
+        console.error("WebSocket error:", err);
+        SEND_BUTTON.disabled = true;
+      };
+    }
+
+    function tryReconnect() {
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        updateStatus("error", `Nie udało się połączyć po ${MAX_RECONNECT_ATTEMPTS} próbach. Odśwież stronę.`);
+        return;
+      }
+
+      reconnectAttempts++;
+      const delay = Math.min(1000 * reconnectAttempts, 5000);
+
+      updateStatus("connecting", `Próba ponownego połączenia (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = setTimeout(connectWebSocket, delay);
+    }
+
+    function updateStatus(status, message) {
+      STATUS_BOX.className = `status-container status-${status}`;
+      STATUS_TEXT.textContent = message;
+    }
+
+    function sendMessage() {
+      const messageInput = document.getElementById("messageInput");
+      const text = messageInput.value.trim();
+      const mode = document.getElementById("modeSelect").value;
+      const repeatVal = document.getElementById("repeatInput").value.trim();
+      const speedVal = document.getElementById("speedInput").value.trim();
+
+      if (!text) {
+        shakeElement(messageInput);
+        return;
+      }
+
+      if (ws.readyState !== WebSocket.OPEN) {
+        updateStatus("error", "Brak połączenia z wyświetlaczem ❌");
+        return;
+      }
+
+      const repeat = repeatVal === "0" || repeatVal === "" ? "infinity" : parseInt(repeatVal);
+      const speed = parseInt(speedVal) || 100;
+
+      const payload = {
+        text,
+        mode,
+        repeat,
+        speed
+      };
+
+      // Temporarily disable the send button and show loading state
+      SEND_BUTTON.disabled = true;
+      SEND_BUTTON.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Wysyłanie...';
+
+      try {
+        ws.send(JSON.stringify(payload));
+        updatePreview(text, mode, speed);
+
+        // Re-enable the button after a short delay
+        setTimeout(() => {
+          SEND_BUTTON.disabled = false;
+          SEND_BUTTON.innerHTML = '<i class="fas fa-paper-plane"></i> Wyślij';
+        }, 500);
+      } catch (error) {
+        console.error("Error sending message:", error);
+        updateStatus("error", "Błąd podczas wysyłania wiadomości 🚨");
+        SEND_BUTTON.disabled = false;
+        SEND_BUTTON.innerHTML = '<i class="fas fa-paper-plane"></i> Wyślij';
+      }
+    }
+
+    function updatePreview(text, mode, speed) {
+      const previewElement = document.getElementById("previewText");
+      previewElement.textContent = text;
+      previewElement.className = "matrix-preview-text";
+
+      if (mode === "scroll") {
+        setTimeout(() => {
+          previewElement.style.animationDuration = `${speed * 0.1}s`;
+          previewElement.classList.add("scrolling");
+        }, 10);
+      } else {
+        previewElement.classList.remove("scrolling");
+      }
+    }
+
+    function clearForm() {
+      document.getElementById("messageInput").value = "";
+      document.getElementById("repeatInput").value = "1";
+      document.getElementById("speedInput").value = "100";
+      document.getElementById("modeSelect").value = "static";
+
+      // Update preview
+      const previewElement = document.getElementById("previewText");
+      previewElement.textContent = "Podgląd tekstu";
+      previewElement.className = "matrix-preview-text";
+    }
+
+    function shakeElement(element) {
+      element.style.border = "1px solid var(--error-color)";
+      element.style.animation = "shake 0.5s";
+      setTimeout(() => {
+        element.style.border = "";
+        element.style.animation = "";
+      }, 500);
+    }
+
+    // Theme toggle
+    const themeToggle = document.getElementById("themeToggle");
+    themeToggle.addEventListener("click", () => {
+      const body = document.body;
+      const isDarkTheme = body.classList.contains("dark-theme");
+
+      if (isDarkTheme) {
+        body.classList.remove("dark-theme");
+        themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        localStorage.setItem("theme", "light");
+      } else {
+        body.classList.add("dark-theme");
+        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        localStorage.setItem("theme", "dark");
+      }
+    });
+
+    // Form inputs live preview
+    document.getElementById("messageInput").addEventListener("input", function() {
+      updatePreviewFromForm();
+    });
+
+    document.getElementById("modeSelect").addEventListener("change", function() {
+      updatePreviewFromForm();
+    });
+
+    document.getElementById("speedInput").addEventListener("input", function() {
+      updatePreviewFromForm();
+    });
+
+    function updatePreviewFromForm() {
+      const text = document.getElementById("messageInput").value.trim() || "Podgląd tekstu";
+      const mode = document.getElementById("modeSelect").value;
+      const speed = parseInt(document.getElementById("speedInput").value) || 100;
+
+      updatePreview(text, mode, speed);
+    }
+
+    // Initialize on page load
+    document.addEventListener("DOMContentLoaded", function() {
+      // Load saved theme
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      if (savedTheme === "light") {
+        document.body.classList.remove("dark-theme");
+        themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+      }
+
+      // Connect to WebSocket
+      connectWebSocket();
+
+      // Setup input validation
+      document.getElementById("repeatInput").addEventListener("input", function() {
+        if (this.value < 0) this.value = 0;
+        if (this.value > 100) this.value = 100;
+      });
+
+      document.getElementById("speedInput").addEventListener("input", function() {
+        if (this.value < 10) this.value = 10;
+        if (this.value > 1000) this.value = 1000;
+      });
+    });
+  </script>
+</body>
+</html>
